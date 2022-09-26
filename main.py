@@ -14,8 +14,10 @@ import os
 class Main:
     def __init__(self):
 
-        # Set cover sizes
+        # Set cover info
         self.coverinfo = {"size": 1000, "format": "jpeg"}
+
+        self.curf = 1
 
         self.checkFolders()
 
@@ -48,11 +50,12 @@ class Main:
                         or file.endswith(".mp3")
                         or file.endswith(".wav")
                     ):
-                        self.lenf += len(os.listdir(currentpath))
-                        audiopaths.append(currentpath)
-                        break
+                        self.lenf += 1
 
-            self.curf = 1
+                        if currentpath != None:
+                            audiopaths.append(currentpath)
+                            currentpath = None
+
 
             for path in audiopaths:
                 self.cover(path)
