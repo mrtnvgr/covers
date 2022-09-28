@@ -22,12 +22,13 @@ class Main:
     def checkFolders(self):
         # Get folder from arguments
         parser = argparse.ArgumentParser()
-        parser.add_argument("-f", "--folder", required=True)
+        parser.add_argument("-f", "--folder", required=True, help="folder path")
         parser.add_argument(
             "--force", help="always overwrite file covers", action="store_true"
         )
         parser.add_argument("-s", "--size", type=int, default=1000, help="cover size")
         parser.add_argument("--format", default="JPEG", help="cover image format")
+        parser.add_argument("--verbose", action="store_true", help="verbose output")
         self.args = parser.parse_args()
 
         # Check if folder exists
@@ -48,6 +49,8 @@ class Main:
                         file.endswith(".flac")
                         or file.endswith(".mp3")
                         or file.endswith(".wav")
+                        or file.endswith(".m4a")
+                        or file.endswith(".dsf")
                     ):
                         self.lenf += 1
 
@@ -72,7 +75,7 @@ class Main:
 
                 files.remove(file)
 
-                break
+                break  # TODO: self.fileExists("folder")
 
         if cover:
 
@@ -80,7 +83,8 @@ class Main:
 
                 file_path = os.path.join(path, file)
                 self.addCover(cover, file_path)
-                print(f"\033[K[{self.curf}/{self.lenf}] {file_path}", end="\r")
+
+                self.print(f"[{self.curf}/{self.lenf}] {file_path}")
 
                 self.curf += 1
 
@@ -180,6 +184,13 @@ class Main:
             return "square"
         else:
             return "rectangle"
+
+    def print(self, text):
+
+        if self.args.verbose:
+            print(text)
+        else:
+            print(f"\033[K{text}", end="\r")
 
 
 if __name__ == "__main__":
