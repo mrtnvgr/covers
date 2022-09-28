@@ -14,10 +14,8 @@ import os
 class Main:
     def __init__(self):
 
-        # Set cover info
-        self.coverinfo = {"size": 1000, "format": "jpeg"}
-
         self.curf = 1
+        self.lenf = 0
 
         self.checkFolders()
 
@@ -28,13 +26,14 @@ class Main:
         parser.add_argument(
             "--force", help="always overwrite file covers", action="store_true"
         )
+        parser.add_argument("-s", "--size", type=int, default=1000, help="cover size")
+        parser.add_argument("--format", default="JPEG", help="cover image format")
         self.args = parser.parse_args()
 
         # Check if folder exists
         if os.path.exists(self.args.folder):
 
             audiopaths = []
-            self.lenf = 0
 
             # Get paths with audio
 
@@ -55,7 +54,6 @@ class Main:
                         if currentpath != None:
                             audiopaths.append(currentpath)
                             currentpath = None
-
 
             for path in audiopaths:
                 self.cover(path)
@@ -93,14 +91,15 @@ class Main:
         except:
             return
 
-        if cover.size != (self.coverinfo["size"], self.coverinfo["size"]):
+        # TODO: Check if cover is square
+        if cover.size != (self.args.size, self.args.size):
             cover = cover.resize(
-                (self.coverinfo["size"], self.coverinfo["size"]),
+                (self.args.size, self.args.size),
                 Image.Resampling.BICUBIC,
             )
 
         output = BytesIO()
-        cover.save(output, format=self.coverinfo["format"].capitalize())
+        cover.save(output, format=self.args.format.capitalize())
 
         return output.getvalue()
 
@@ -131,9 +130,9 @@ class Main:
 
                         # Check picture size
                         if (
-                            picture.width != self.coverinfo["size"]
-                            and picture.height != self.coverinfo["size"]
-                        ) or self.args.force:
+                            picture.width != self.args.size
+                            and picture.height != self.args.size
+                        ) or self.args.force:  # TODO: square check here too
 
                             # Resize picture
                             newData = self.getCover(BytesIO(picture.data))
@@ -156,9 +155,9 @@ class Main:
         pic.data = data
 
         pic.type = mutagen.id3.PictureType.COVER_FRONT
-        pic.mime = "image/" + self.coverinfo["format"]
-        pic.width = self.coverinfo["size"]
-        pic.height = self.coverinfo["size"]
+        pic.mime = "image/" + self.args.format
+        pic.width = self.args.size
+        pic.height = self.args.size
         pic.depth = 16
 
         return pic
