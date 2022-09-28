@@ -27,7 +27,7 @@ class Main:
             "--force", help="always overwrite file covers", action="store_true"
         )
         parser.add_argument("-s", "--size", type=int, default=1000, help="cover size")
-        parser.add_argument("--format", default="JPEG", help="cover image format")
+        parser.add_argument("--format", default="jpeg", help="cover image format")
         parser.add_argument("--verbose", action="store_true", help="verbose output")
         self.args = parser.parse_args()
 
@@ -144,8 +144,9 @@ class Main:
                             and picture.height != self.args.size
                         ) or self.args.force:
 
-                            # Check if cover is square
-                            if self.getShape(cover.size) == "square":
+                            # Check if picture is square
+                            size = (picture.width, picture.height)
+                            if self.getShape(size) == "square":
 
                                 # Resize picture
                                 picdata = self.getCover(BytesIO(picdata))
