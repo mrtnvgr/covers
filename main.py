@@ -91,12 +91,15 @@ class Main:
         except:
             return
 
-        # TODO: Check if cover is square
-        if cover.size != (self.args.size, self.args.size):
-            cover = cover.resize(
-                (self.args.size, self.args.size),
-                Image.Resampling.BICUBIC,
-            )
+        # Check if cover is square
+        if self.getShape(cover.size) == "square":
+
+            # Check if picture size and cover size differ
+            if cover.size != (self.args.size, self.args.size):
+                cover = cover.resize(
+                    (self.args.size, self.args.size),
+                    Image.Resampling.BICUBIC,
+                )
 
         output = BytesIO()
         cover.save(output, format=self.args.format.capitalize())
@@ -128,26 +131,33 @@ class Main:
                     newPictures = []
                     for picture in audio.pictures:
 
+                        picdata = picture.data
+
                         # Check picture size
                         if (
                             picture.width != self.args.size
                             and picture.height != self.args.size
-                        ) or self.args.force:  # TODO: square check here too
+                        ) or self.args.force:
 
-                            # Resize picture
-                            newData = self.getCover(BytesIO(picture.data))
+                            # Check if cover is square
+                            if self.getShape(cover.size) == "square":
 
-                            newPicture = self.createPicture(newData)
+                                # Resize picture
+                                picdata = self.getCover(BytesIO(picdata))
 
-                            newPictures.append(newPicture)
+                        newPicture = self.createPicture(picdata)
 
-                    audio.clear_pictures()
+                        newPictures.append(newPicture)
 
-                    for picture in newPictures:
+                    # Check for new pictures
+                    if newPictures != []:
+                        audio.clear_pictures()
 
-                        audio.add_picture(picture)
+                        for picture in newPictures:
 
-                    audio.save(file_path)
+                            audio.add_picture(picture)
+
+                        audio.save(file_path)
 
     def createPicture(self, data):
         pic = mutagen.flac.Picture()
@@ -161,6 +171,15 @@ class Main:
         pic.depth = 16
 
         return pic
+
+    @staticmethod
+    def getShape(size):
+        allowable_size_error = size[0] // 10
+        size_error = abs(size[0] - size[1])
+        if size_error <= allowable_size_error:
+            return "square"
+        else:
+            return "rectangle"
 
 
 if __name__ == "__main__":
