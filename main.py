@@ -67,15 +67,22 @@ class Main:
         cover = None
         files = os.listdir(path)
 
-        for file in files[:]:
-            if "cover" in file.lower() or "folder" in file.lower():
+        # List of cover names (from most to least possible)
+        names = ("cover", "folder", "front", ".png", ".jpg")
 
-                cover_path = os.path.join(path, file)
+        # Iterate through possible names
+        for name in names:
+
+            # Check if file is in path
+            cover_path = self.fileExists(path, name)
+            if cover_path != None:
+
+                # Get cover image
                 cover = self.getCover(cover_path)
 
-                files.remove(file)
-
-                break  # TODO: self.fileExists("folder")
+                # Stop iterating if cover found
+                if cover:
+                    break
 
         if cover:
 
@@ -184,6 +191,13 @@ class Main:
             return "square"
         else:
             return "rectangle"
+
+    @staticmethod
+    def fileExists(path, name):
+        for file in os.listdir(path):
+            if name in file.lower():
+                path = os.path.join(path, name)
+                return path
 
     def print(self, text):
 
