@@ -45,13 +45,7 @@ class Main:
                 for file in files:
 
                     # Check if file extension is ext
-                    if (
-                        file.endswith(".flac")
-                        or file.endswith(".mp3")
-                        or file.endswith(".wav")
-                        or file.endswith(".m4a")
-                        or file.endswith(".dsf")
-                    ):
+                    if self.checkAudio(file):
                         self.lenf += 1
 
                         if currentpath != None:
@@ -88,12 +82,13 @@ class Main:
 
             for file in files:
 
-                file_path = os.path.join(path, file)
-                self.addCover(cover, file_path)
+                if self.checkAudio(file):
+                    file_path = os.path.join(path, file)
+                    self.addCover(cover, file_path)
 
-                self.print(f"[{self.curf}/{self.lenf}] {file_path}")
+                    self.print(f"[{self.curf}/{self.lenf}] {file_path}")
 
-                self.curf += 1
+                    self.curf += 1
 
     def getCover(self, cover_path):
 
@@ -121,7 +116,6 @@ class Main:
         if os.path.isfile(file_path):
 
             audio = mutagen.File(file_path)
-
             if audio != None and hasattr(audio, "pictures"):
 
                 # File has not pictures
@@ -195,9 +189,20 @@ class Main:
     @staticmethod
     def fileExists(path, name):
         for file in os.listdir(path):
-            if name in file.lower():
-                path = os.path.join(path, name)
+            if name in file.lower() and (
+                file.lower().endswith(".jpg") or file.lower().endswith(".png")
+            ):
+                path = os.path.join(path, file)
                 return path
+
+    @staticmethod
+    def checkAudio(file):
+        exts = (".flac", ".mp3", ".wav", ".m4a")
+        for ext in exts:
+
+            if file.lower().endswith(ext):
+                return True
+        return False
 
     def print(self, text):
 
