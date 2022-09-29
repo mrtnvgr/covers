@@ -28,6 +28,9 @@ class Main:
         )
         parser.add_argument("-s", "--size", type=int, default=1000, help="cover size")
         parser.add_argument(
+            "--keep-size", action="store_true", help="do not resize covers"
+        )
+        parser.add_argument(
             "--format",
             default="jpeg",
             choices=("jpeg", "png"),
@@ -100,12 +103,15 @@ class Main:
         # Check if cover is square
         if self.getShape(cover.size) == "square":
 
-            # Check if picture size and cover size differ
-            if cover.size != (self.args.size, self.args.size):
-                cover = cover.resize(
-                    (self.args.size, self.args.size),
-                    Image.Resampling.BICUBIC,
-                )
+            # Check if resizing is allowed
+            if not self.args.keep_size:
+
+                # Check if picture size and cover size differ
+                if cover.size != (self.args.size, self.args.size):
+                    cover = cover.resize(
+                        (self.args.size, self.args.size),
+                        Image.Resampling.BICUBIC,
+                    )
 
         output = BytesIO()
         cover.save(output, format=self.args.format.capitalize())
