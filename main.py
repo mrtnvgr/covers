@@ -83,24 +83,19 @@ class Main:
                 if cover:
                     break
 
-        if cover:
+        for file in files:
 
-            for file in files:
+            if self.checkAudio(file):
+                file_path = os.path.join(path, file)
+                self.addCover(cover, file_path)
 
-                if self.checkAudio(file):
-                    file_path = os.path.join(path, file)
-                    self.addCover(cover, file_path)
+                self.print(f"[{self.curf}/{self.lenf}] {file_path}")
 
-                    self.print(f"[{self.curf}/{self.lenf}] {file_path}")
-
-                    self.curf += 1
+                self.curf += 1
 
     def getCover(self, cover_path):
 
-        try:
-            cover = Image.open(cover_path).convert("RGB")
-        except:
-            return
+        cover = Image.open(cover_path).convert("RGB")
 
         # Check if cover is square
         if self.getShape(cover.size) == "square":
@@ -124,7 +119,7 @@ class Main:
             if audio != None and hasattr(audio, "pictures"):
 
                 # File has not pictures
-                if audio.pictures == []:
+                if audio.pictures == [] and cover != None:
 
                     pic = self.createPicture(cover)
 
@@ -142,13 +137,11 @@ class Main:
                     for picture in audio.pictures:
 
                         picdata = picture.data
-
                         # Check picture size
                         if (
                             picture.width != self.args.size
-                            and picture.height != self.args.size
+                            or picture.height != self.args.size
                         ) or self.args.force:
-
                             # Check if picture is square
                             size = (picture.width, picture.height)
                             if self.getShape(size) == "square":
