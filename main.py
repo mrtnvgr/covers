@@ -17,6 +17,8 @@ class Main:
         self.curf = 1
         self.lenf = 0
 
+        self.statistics = {"skipped": 0, "converted": 0, "new": 0}
+
         self.checkFolders()
 
     def checkFolders(self):
@@ -35,6 +37,9 @@ class Main:
             default="jpeg",
             choices=("jpeg", "png"),
             help="cover image format",
+        )
+        parser.add_argument(
+            "--no-stat", action="store_true", help="do not print statistics"
         )
         parser.add_argument("--verbose", action="store_true", help="verbose output")
         self.args = parser.parse_args()
@@ -60,9 +65,22 @@ class Main:
                             audiopaths.append(currentpath)
                             currentpath = None
 
+            # Iterate through folders
             for path in audiopaths:
                 self.cover(path)
+
         print()
+
+        # Check if statistics is not blocked
+        if not self.args.no_stat:
+
+            # Print statistics
+            print()
+            print("Covers statistics:")
+            print(f"  -  Skipped: {self.statistics['skipped']}")
+            print(f"  -  Converted: {self.statistics['converted']}")
+            print(f"  -  New: {self.statistics['new']}")
+            print()
 
     def cover(self, path):
 
@@ -135,11 +153,16 @@ class Main:
 
                     audio.save(file_path)
 
+                    # Update statistics
+                    self.statistics["new"] += 1
+
                 # File has pictures
                 else:
 
                     # Check picture size
                     newPictures = []
+                    resized = False
+
                     for picture in audio.pictures:
 
                         picdata = picture.data
@@ -155,12 +178,16 @@ class Main:
                                 # Resize picture
                                 picdata = self.getCover(BytesIO(picdata))
 
+                                # Burn resized fuse
+                                if not resized:
+                                    resized = True
+
                         newPicture = self.createPicture(picdata)
 
                         newPictures.append(newPicture)
 
-                    # Check for new pictures
-                    if newPictures != []:
+                    # Check if any pictures were resized
+                    if resized:
                         audio.clear_pictures()
 
                         for picture in newPictures:
@@ -168,6 +195,13 @@ class Main:
                             audio.add_picture(picture)
 
                         audio.save(file_path)
+
+                        # Update statistics
+                        self.statistics["converted"] += 1
+                    else:
+
+                        # Update statistics
+                        self.statistics["skipped"] += 1
 
     def createPicture(self, data):
         pic = mutagen.flac.Picture()
