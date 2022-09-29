@@ -27,7 +27,12 @@ class Main:
             "--force", help="always overwrite file covers", action="store_true"
         )
         parser.add_argument("-s", "--size", type=int, default=1000, help="cover size")
-        parser.add_argument("--format", default="jpeg", help="cover image format")
+        parser.add_argument(
+            "--format",
+            default="jpeg",
+            choices=("jpeg", "png"),
+            help="cover image format",
+        )
         parser.add_argument("--verbose", action="store_true", help="verbose output")
         self.args = parser.parse_args()
 
