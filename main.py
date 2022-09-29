@@ -18,6 +18,7 @@ class Main:
         self.lenf = 0
 
         self.statistics = {"skipped": 0, "converted": 0, "new": 0}
+        self.not_found = []
 
         self.checkFolders()
 
@@ -80,7 +81,20 @@ class Main:
             print(f"  -  Skipped: {self.statistics['skipped']}")
             print(f"  -  Converted: {self.statistics['converted']}")
             print(f"  -  New: {self.statistics['new']}")
+            print(f"  -  Not Found: {len(self.not_found)}")
             print()
+
+            # Check if not_found list contains any folders
+
+            if self.not_found != []:
+
+                # Print paths where covers were not found
+                print("Covers were not found in:")
+
+                for folder in self.not_found:
+                    print(f"  -  {folder}")
+
+                print()
 
     def cover(self, path):
 
@@ -202,6 +216,14 @@ class Main:
 
                         # Update statistics
                         self.statistics["skipped"] += 1
+
+                # Update statistics if cover not found
+                if audio.pictures == []:
+
+                    # Check if path is not in not_found list
+                    folder_path = os.path.dirname(file_path)
+                    if folder_path not in self.not_found:
+                        self.not_found.append(folder_path)
 
     def createPicture(self, data):
         pic = mutagen.flac.Picture()
