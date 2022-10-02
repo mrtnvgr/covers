@@ -266,7 +266,6 @@ class Main:
                 ):
 
                     # Get cover from internet
-                    # TODO: make argument --local - do not use internet
                     # TODO: make list of folders of downloaded covers (just like for not_found)
 
                     result = download.getCover(artist, album, self.args.size)
