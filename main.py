@@ -10,6 +10,8 @@ import mutagen
 import argparse
 import os
 
+import download
+
 
 class Main:
     def __init__(self):
@@ -17,8 +19,10 @@ class Main:
         self.curf = 1
         self.lenf = 0
 
-        self.statistics = {"skipped": 0, "converted": 0, "new": 0}
+        self.statistics = {"skipped": 0, "converted": 0, "new": 0, "downloaded": 0}
         self.not_found = []
+
+        self.checkedfuse = []
 
         self.getArguments()
         self.checkFolders()
@@ -28,7 +32,9 @@ class Main:
         parser = argparse.ArgumentParser()
         parser.add_argument("-f", "--folder", required=True, help="folder path")
         parser.add_argument(
-            "--force", help="always overwrite file covers", action="store_true"
+            "--force",
+            help="always overwrite file covers and agree on covers from internet",
+            action="store_true",
         )
         parser.add_argument("-s", "--size", type=int, default=1000, help="cover size")
         parser.add_argument(
@@ -84,6 +90,7 @@ class Main:
             print(f"  -  Skipped: {self.statistics['skipped']}")
             print(f"  -  Converted: {self.statistics['converted']}")
             print(f"  -  New: {self.statistics['new']}")
+            print(f"  -  Downloaded: {self.statistics['downloaded']}")
             print(f"  -  Not Found: {len(self.not_found)}")
             print()
 
@@ -125,7 +132,10 @@ class Main:
 
             if self.checkAudio(file):
                 file_path = os.path.join(path, file)
-                self.addCover(cover, file_path)
+
+                response = self.addCover(cover, file_path)
+                if response != None:
+                    cover = response
 
                 self.print(f"[{self.curf}/{self.lenf}] {file_path}")
 
@@ -244,13 +254,67 @@ class Main:
                         # Update statistics
                         self.statistics["skipped"] += 1
 
-                # Update statistics if cover not found
-                if audio.pictures == []:
+                artist = (audio.get("artist") or audio.get("performer")) or None
+                album = audio["album"][0] if audio.get("album") else None
+                if audio.pictures == [] and self.checkedfuse != album:
 
-                    # Check if path is not in not_found list
-                    folder_path = os.path.dirname(file_path)
-                    if folder_path not in self.not_found:
-                        self.not_found.append(folder_path)
+                    # Get cover from internet
+                    # TODO: make argument --local - do not use internet
+                    # TODO: make list of folders of downloaded covers (just like for not_found)
+
+                    if artist and album:
+
+                        result = download.getCover(artist, album, self.args.size)
+
+                        if result:
+
+                            result_artist = result["artist"]
+                            result_title = result["title"]
+
+                            if not self.args.force:
+                                # Ask user for consent
+                                consent = self.print(
+                                    f"[ {artist[0]} - {album} ] = [ {result_artist} - {result_title} ]? (y/n): ",
+                                    func=input,
+                                ).lower()
+                            else:
+                                consent = "y"
+
+                            if consent == "y":
+
+                                # Move cursor to line start
+                                print("\r\r", end="")
+
+                                # Get bytes from result
+                                result_data = result["bytes"]
+
+                                # Update statistics
+                                self.statistics["downloaded"] += 1
+                                self.statistics["new"] += 1
+
+                                # Resize cover
+                                result_data, _ = self.getCover(BytesIO(result_data))
+
+                                # Get picture from data
+                                picture = self.createPicture(result_data)
+
+                                # Add picture to file
+                                audio.add_picture(picture)
+
+                                # Save file
+                                audio.save(file_path)
+
+                                return result_data
+
+                        # Update checked fuse
+                        self.checkedfuse = album
+
+                    else:
+
+                        # Check if path is not in not_found list
+                        folder_path = os.path.dirname(file_path)
+                        if folder_path not in self.not_found:
+                            self.not_found.append(folder_path)
 
     def createPicture(self, data):
         pic = mutagen.flac.Picture()
@@ -267,7 +331,7 @@ class Main:
 
     @staticmethod
     def getShape(size):
-        allowable_size_error = size[0] // 10
+        allowable_size_error = size[0] // 20
         size_error = abs(size[0] - size[1])
         if size_error <= allowable_size_error:
             return "square"
@@ -292,12 +356,16 @@ class Main:
                 return True
         return False
 
-    def print(self, text):
+    def print(self, text, func=print):
 
         if self.args.verbose:
-            print(text)
+            return func(text)
         else:
-            print(f"\033[K{text}", end="\r")
+
+            if func == print:
+                return func(f"\033[K{text}", end="\r")
+            else:
+                return func(f"\033[K{text}")
 
 
 if __name__ == "__main__":
