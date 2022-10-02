@@ -132,18 +132,42 @@ class Main:
 
         cover = Image.open(cover_path).convert("RGB")
 
-        # Check if cover is square
-        if self.getShape(cover.size) == "square":
+        # Check if resizing is allowed
+        if not self.args.keep_size:
 
-            # Check if resizing is allowed
-            if not self.args.keep_size:
+            shape = self.getShape(cover.size)
 
-                # Check if picture size and cover size differ
-                if cover.size != (self.args.size, self.args.size):
-                    cover = cover.resize(
-                        (self.args.size, self.args.size),
-                        Image.Resampling.BICUBIC,
-                    )
+            # Check if cover is square
+            if shape == "square":
+
+                size = (self.args.size, self.args.size)
+
+            elif shape == "rectangle":
+
+                # Get size factor
+                factor = max(cover.size) / min(cover.size)
+
+                # Get normalized size
+                size = [self.args.size, self.args.size]
+
+                # Get max value index
+                index = cover.size.index(max(cover.size))
+
+                # Multiply value by factor, index = max value from cover size
+                size[index] = int(size[index] * factor)
+
+            else:
+
+                # Unexpected behaviour
+                print(f"err: {shape}")
+                exit(1)
+
+            # Check if size and cover argument size differ
+            if cover.size != size:
+                cover = cover.resize(
+                    size,
+                    Image.Resampling.BICUBIC,
+                )
 
         output = BytesIO()
         cover.save(output, format=self.args.format.capitalize())
@@ -185,16 +209,13 @@ class Main:
                             picture.width != self.args.size
                             or picture.height != self.args.size
                         ) or self.args.force:
-                            # Check if picture is square
-                            size = (picture.width, picture.height)
-                            if self.getShape(size) == "square":
 
-                                # Resize picture
-                                picdata = self.getCover(BytesIO(picdata))
+                            # Resize picture
+                            picdata = self.getCover(BytesIO(picdata))
 
-                                # Burn resized fuse
-                                if not resized:
-                                    resized = True
+                            # Burn resized fuse
+                            if not resized:
+                                resized = True
 
                         newPicture = self.createPicture(picdata)
 
