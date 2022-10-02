@@ -298,7 +298,8 @@ class Main:
                                 self.statistics["new"] += 1
 
                                 # Resize cover
-                                result_data, _ = self.getCover(BytesIO(result_data))
+                                # NOTE: deprecated
+                                # result_data, _ = self.getCover(BytesIO(result_data))
 
                                 # Get picture from data
                                 picture = self.createPicture(result_data)
