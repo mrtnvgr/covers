@@ -130,6 +130,8 @@ class Main:
 
     def getCover(self, cover_path):
 
+        resized = False
+
         cover = Image.open(cover_path).convert("RGB")
 
         # Check if resizing is allowed
@@ -168,11 +170,12 @@ class Main:
                     size,
                     Image.Resampling.BICUBIC,
                 )
+                resized = True
 
         output = BytesIO()
         cover.save(output, format=self.args.format.capitalize())
 
-        return output.getvalue()
+        return output.getvalue(), resized
 
     def addCover(self, cover, file_path):
         if os.path.isfile(file_path):
@@ -199,7 +202,7 @@ class Main:
 
                     # Check picture size
                     newPictures = []
-                    resized = False
+                    resized_fuse = False
 
                     for picture in audio.pictures:
 
@@ -211,18 +214,18 @@ class Main:
                         ) or self.args.force:
 
                             # Resize picture
-                            picdata = self.getCover(BytesIO(picdata))
+                            picdata, resized = self.getCover(BytesIO(picdata))
 
                             # Burn resized fuse
                             if not resized:
-                                resized = True
+                                resized_fuse = True
 
                         newPicture = self.createPicture(picdata)
 
                         newPictures.append(newPicture)
 
                     # Check if any pictures were resized
-                    if resized:
+                    if resized_fuse:
                         audio.clear_pictures()
 
                         for picture in newPictures:
