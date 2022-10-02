@@ -13,9 +13,14 @@ def getCover(artist, album_name, quality):
     search_data = urllib.parse.urlencode(
         {"term": artist, "media": "music", "entity": "album"}
     )
-    response = requests.get(
-        f"https://itunes.apple.com/search?{search_data}", headers=headers
-    )
+
+    try:
+        response = requests.get(
+            f"https://itunes.apple.com/search?{search_data}", headers=headers
+        )
+    except requests.exceptions.ConnectionError:
+        print("WARNING: No internet connection. Use --local argument")
+        return
 
     # Check if result is not an error
     if response.status_code == 200:

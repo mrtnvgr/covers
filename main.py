@@ -123,7 +123,7 @@ class Main:
             if cover_path != None:
 
                 # Get cover image
-                cover = self.getCover(cover_path)
+                cover, _ = self.getCover(cover_path)
 
                 # Stop iterating if cover found
                 if cover:
@@ -205,7 +205,6 @@ class Main:
                     audio.clear_pictures()
 
                     audio.add_picture(pic)
-
                     audio.save(file_path)
 
                     # Update statistics
@@ -311,8 +310,8 @@ class Main:
 
                             return result_data
 
-                        # Update checked fuse
-                        self.checkedfuse = album
+                    # Update checked fuse
+                    self.checkedfuse = album
 
                 if audio.pictures == []:
 
