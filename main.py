@@ -45,8 +45,8 @@ class Main:
         parser.add_argument("--verbose", action="store_true", help="verbose output")
         self.args = parser.parse_args()
 
-        # Check if folder exists
-        if os.path.exists(self.args.folder):
+        # Check if argument is folder and exists
+        if os.path.exists(self.args.folder) and os.path.isdir(self.args.folder):
 
             audiopaths = []
 
