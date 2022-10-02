@@ -20,9 +20,10 @@ class Main:
         self.statistics = {"skipped": 0, "converted": 0, "new": 0}
         self.not_found = []
 
+        self.getArguments()
         self.checkFolders()
 
-    def checkFolders(self):
+    def getArguments(self):
         # Get folder from arguments
         parser = argparse.ArgumentParser()
         parser.add_argument("-f", "--folder", required=True, help="folder path")
@@ -44,6 +45,8 @@ class Main:
         )
         parser.add_argument("--verbose", action="store_true", help="verbose output")
         self.args = parser.parse_args()
+
+    def checkFolders(self):
 
         # Check if argument is folder and exists
         if os.path.exists(self.args.folder) and os.path.isdir(self.args.folder):
