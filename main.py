@@ -46,6 +46,7 @@ class Main:
             choices=("jpeg", "png"),
             help="cover image format",
         )
+        parser.add_argument("--local", action="store_true", help="do not use internet")
         parser.add_argument(
             "--no-stat", action="store_true", help="do not print statistics"
         )
@@ -256,7 +257,11 @@ class Main:
 
                 artist = (audio.get("artist") or audio.get("performer")) or None
                 album = audio["album"][0] if audio.get("album") else None
-                if audio.pictures == [] and self.checkedfuse != album:
+                if (
+                    not self.args.local
+                    and audio.pictures == []
+                    and self.checkedfuse != album
+                ):
 
                     # Get cover from internet
                     # TODO: make argument --local - do not use internet
