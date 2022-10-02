@@ -261,66 +261,66 @@ class Main:
                     not self.args.local
                     and audio.pictures == []
                     and self.checkedfuse != album
+                    and artist
+                    and album
                 ):
 
                     # Get cover from internet
                     # TODO: make argument --local - do not use internet
                     # TODO: make list of folders of downloaded covers (just like for not_found)
 
-                    if artist and album:
+                    result = download.getCover(artist, album, self.args.size)
 
-                        result = download.getCover(artist, album, self.args.size)
+                    if result:
 
-                        if result:
+                        result_artist = result["artist"]
+                        result_title = result["title"]
 
-                            result_artist = result["artist"]
-                            result_title = result["title"]
+                        if not self.args.force:
+                            # Ask user for consent
+                            consent = self.print(
+                                f"[ {artist[0]} - {album} ] = [ {result_artist} - {result_title} ]? (y/n): ",
+                                func=input,
+                            ).lower()
+                        else:
+                            consent = "y"
 
-                            if not self.args.force:
-                                # Ask user for consent
-                                consent = self.print(
-                                    f"[ {artist[0]} - {album} ] = [ {result_artist} - {result_title} ]? (y/n): ",
-                                    func=input,
-                                ).lower()
-                            else:
-                                consent = "y"
+                        if consent == "y":
 
-                            if consent == "y":
+                            # Move cursor to line start
+                            print("\r\r", end="")
 
-                                # Move cursor to line start
-                                print("\r\r", end="")
+                            # Get bytes from result
+                            result_data = result["bytes"]
 
-                                # Get bytes from result
-                                result_data = result["bytes"]
+                            # Update statistics
+                            self.statistics["downloaded"] += 1
+                            self.statistics["new"] += 1
 
-                                # Update statistics
-                                self.statistics["downloaded"] += 1
-                                self.statistics["new"] += 1
+                            # Resize cover
+                            # NOTE: deprecated
+                            # result_data, _ = self.getCover(BytesIO(result_data))
 
-                                # Resize cover
-                                # NOTE: deprecated
-                                # result_data, _ = self.getCover(BytesIO(result_data))
+                            # Get picture from data
+                            picture = self.createPicture(result_data)
 
-                                # Get picture from data
-                                picture = self.createPicture(result_data)
+                            # Add picture to file
+                            audio.add_picture(picture)
 
-                                # Add picture to file
-                                audio.add_picture(picture)
+                            # Save file
+                            audio.save(file_path)
 
-                                # Save file
-                                audio.save(file_path)
-
-                                return result_data
+                            return result_data
 
                         # Update checked fuse
                         self.checkedfuse = album
 
-                    else:
+                if audio.pictures == []:
 
-                        # Check if path is not in not_found list
-                        folder_path = os.path.dirname(file_path)
-                        if folder_path not in self.not_found:
-                            self.not_found.append(folder_path)
+                    # Check if path is not in not_found list
+                    folder_path = os.path.dirname(file_path)
+                    if folder_path not in self.not_found:
+                        self.not_found.append(folder_path)
 
     def createPicture(self, data):
         pic = mutagen.flac.Picture()
