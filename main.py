@@ -230,7 +230,7 @@ class Main:
                             picdata, resized = self.getCover(BytesIO(picdata))
 
                             # Burn resized fuse
-                            if not resized:
+                            if resized:
                                 resized_fuse = True
 
                         newPicture = self.createPicture(picdata)
@@ -271,44 +271,29 @@ class Main:
 
                     if result:
 
-                        result_artist = result["artist"]
-                        result_title = result["title"]
+                        # Move cursor to line start
+                        print("\r\r", end="")
 
-                        if not self.args.force:
-                            # Ask user for consent
-                            consent = self.print(
-                                f"[ {artist[0]} - {album} ] = [ {result_artist} - {result_title} ]? (y/n): ",
-                                func=input,
-                            ).lower()
-                        else:
-                            consent = "y"
+                        # Get bytes from result
+                        result_data = result["bytes"]
 
-                        if consent == "y":
+                        # Update statistics
+                        self.statistics["downloaded"] += 1
+                        self.statistics["new"] += 1
 
-                            # Move cursor to line start
-                            print("\r\r", end="")
+                        # Resize cover
+                        result_data, _ = self.getCover(BytesIO(result_data))
 
-                            # Get bytes from result
-                            result_data = result["bytes"]
+                        # Get picture from data
+                        picture = self.createPicture(result_data)
 
-                            # Update statistics
-                            self.statistics["downloaded"] += 1
-                            self.statistics["new"] += 1
+                        # Add picture to file
+                        audio.add_picture(picture)
 
-                            # Resize cover
-                            # NOTE: deprecated
-                            # result_data, _ = self.getCover(BytesIO(result_data))
+                        # Save file
+                        audio.save(file_path)
 
-                            # Get picture from data
-                            picture = self.createPicture(result_data)
-
-                            # Add picture to file
-                            audio.add_picture(picture)
-
-                            # Save file
-                            audio.save(file_path)
-
-                            return result_data
+                        return result_data
 
                     # Update checked fuse
                     self.checkedfuse = album
