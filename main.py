@@ -19,9 +19,13 @@ class Main:
         self.curf = 1
         self.lenf = 0
 
-        self.statistics = {"skipped": 0, "converted": 0, "new": 0}
-        self.not_found = []
-        self.downloaded = []
+        self.statistics = {
+            "skipped_count": 0,
+            "converted_count": 0,
+            "new_count": 0,
+            "not_found_list": [],
+            "downloaded_list": [],
+        }
 
         self.checkedfuse = []
 
@@ -64,7 +68,7 @@ class Main:
             # Get paths with audio
 
             # Iterate through folders
-            for currentpath, folders, files in os.walk(self.args.folder):
+            for currentpath, _, files in os.walk(self.args.folder):
 
                 # Iterate through files
                 for file in files:
@@ -92,30 +96,30 @@ class Main:
             print(f"  -  Skipped: {self.statistics['skipped']}")
             print(f"  -  Converted: {self.statistics['converted']}")
             print(f"  -  New: {self.statistics['new']}")
-            print(f"  -  Downloaded: {len(self.downloaded)}")
-            print(f"  -  Not Found: {len(self.not_found)}")
+            print(f"  -  Downloaded: {len(self.statistics['downloaded_list'])}")
+            print(f"  -  Not Found: {len(self.statistics['not_found_list'])}")
             print()
 
             # Check if not_found list contains any folders
 
-            if self.not_found != []:
+            if self.statistics["not_found_list"] != []:
 
                 # Print paths where covers were not found
                 print("Covers were not found in:")
 
-                for folder in self.not_found:
+                for folder in self.statistics["not_found_list"]:
                     print(f"  -  {folder}")
 
                 print()
 
             # Check if downloaded list contains any folders
 
-            if self.downloaded != []:
+            if self.statistics["downloaded_list"] != []:
 
                 # Print paths
                 print("Downloaded covers:")
 
-                for folder in self.downloaded:
+                for folder in self.statistics["downloaded_list"]:
                     print(f"  -  {folder}")
 
                 print()
@@ -261,11 +265,11 @@ class Main:
                         audio.save(file_path)
 
                         # Update statistics
-                        self.statistics["converted"] += 1
+                        self.statistics["converted_count"] += 1
                     else:
 
                         # Update statistics
-                        self.statistics["skipped"] += 1
+                        self.statistics["skipped_count"] += 1
 
                 artist = (audio.get("artist") or audio.get("performer")) or None
                 album = audio["album"][0] if audio.get("album") else None
@@ -292,10 +296,10 @@ class Main:
 
                         # Append folder to downloaded
                         folder = os.path.basename(os.path.dirname(file_path))
-                        if folder not in self.downloaded:
-                            self.downloaded.append(folder)
+                        if folder not in self.statistics["downloaded_list"]:
+                            self.statistics["downloaded_list"].append(folder)
 
-                        self.statistics["new"] += 1
+                        self.statistics["new_count"] += 1
 
                         # Resize cover
                         result_data, _ = self.getCover(BytesIO(result_data))
@@ -318,8 +322,8 @@ class Main:
 
                     # Check if path is not in not_found list
                     folder_path = os.path.dirname(file_path)
-                    if folder_path not in self.not_found:
-                        self.not_found.append(folder_path)
+                    if folder_path not in self.statistics["not_found_list"]:
+                        self.statistics["not_found_list"].append(folder_path)
 
     def createPicture(self, data):
         pic = mutagen.flac.Picture()
