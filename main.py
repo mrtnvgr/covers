@@ -19,8 +19,9 @@ class Main:
         self.curf = 1
         self.lenf = 0
 
-        self.statistics = {"skipped": 0, "converted": 0, "new": 0, "downloaded": 0}
+        self.statistics = {"skipped": 0, "converted": 0, "new": 0}
         self.not_found = []
+        self.downloaded = []
 
         self.checkedfuse = []
 
@@ -91,7 +92,7 @@ class Main:
             print(f"  -  Skipped: {self.statistics['skipped']}")
             print(f"  -  Converted: {self.statistics['converted']}")
             print(f"  -  New: {self.statistics['new']}")
-            print(f"  -  Downloaded: {self.statistics['downloaded']}")
+            print(f"  -  Downloaded: {len(self.downloaded)}")
             print(f"  -  Not Found: {len(self.not_found)}")
             print()
 
@@ -103,6 +104,18 @@ class Main:
                 print("Covers were not found in:")
 
                 for folder in self.not_found:
+                    print(f"  -  {folder}")
+
+                print()
+
+            # Check if downloaded list contains any folders
+
+            if self.downloaded != []:
+
+                # Print paths
+                print("Downloaded covers:")
+
+                for folder in self.downloaded:
                     print(f"  -  {folder}")
 
                 print()
@@ -265,8 +278,6 @@ class Main:
                 ):
 
                     # Get cover from internet
-                    # TODO: make list of folders of downloaded covers (just like for not_found)
-
                     result = download.getCover(artist, album, self.args.size)
 
                     if result:
@@ -278,7 +289,12 @@ class Main:
                         result_data = result["bytes"]
 
                         # Update statistics
-                        self.statistics["downloaded"] += 1
+
+                        # Append folder to downloaded
+                        folder = os.path.basename(os.path.dirname(file_path))
+                        if folder not in self.downloaded:
+                            self.downloaded.append(folder)
+
                         self.statistics["new"] += 1
 
                         # Resize cover
