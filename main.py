@@ -93,9 +93,9 @@ class Main:
             # Print statistics
             print()
             print("Covers statistics:")
-            print(f"  -  Skipped: {self.statistics['skipped']}")
-            print(f"  -  Converted: {self.statistics['converted']}")
-            print(f"  -  New: {self.statistics['new']}")
+            print(f"  -  Skipped: {self.statistics['skipped_count']}")
+            print(f"  -  Converted: {self.statistics['converted_count']}")
+            print(f"  -  New: {self.statistics['new_count']}")
             print(f"  -  Downloaded: {len(self.statistics['downloaded_list'])}")
             print(f"  -  Not Found: {len(self.statistics['not_found_list'])}")
             print()
@@ -225,7 +225,7 @@ class Main:
                     audio.save(file_path)
 
                     # Update statistics
-                    self.statistics["new"] += 1
+                    self.statistics["new_count"] += 1
 
                 # File has pictures
                 else:
