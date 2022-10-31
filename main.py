@@ -316,8 +316,8 @@ class Main:
                         self.statistics["not_found_list"].append(folder_path)
 
     def addPicture(self, audio, file_path, cover, clear=False, save=False):
-        # NOTE: flac support only
-        # TODO: add mp3 and m4a support
+        # NOTE: flac and mp3 support
+        # TODO: add m4a support
         if cover != None:
 
             if type(cover) is not list:
@@ -336,39 +336,77 @@ class Main:
 
                 return audio
 
+            elif "audio/mp3" in audio.mime:
+
+                if clear:
+                    audio.tags.delall("APIC")
+
+                for pic in cover:
+                    audio.tags.add(pic)
+
+                if save:
+                    audio.save(file_path)
+
+                return audio
+
     def getPictures(self, audio):
-        # NOTE: flac support only
-        # TODO: add mp3 and m4a support
+        # NOTE: flac and mp3 support
+        # TODO: add m4a support
         if "audio/flac" in audio.mime:
 
             return audio.pictures
 
-    def getPictureData(self, picture):
-        # NOTE: flac support only
-        # TODO: add mp3 and m4a support
+        elif "audio/mp3" in audio.mime:
 
-        # FLAC
+            return audio.tags.getall("APIC")
+
+    def getPictureData(self, picture):
+        # NOTE: flac and mp3 support
+        # TODO: add m4a support
+
+        # FLAC and MP3
         if hasattr(picture, "data"):
 
             return picture.data
 
     def getPictureSize(self, picture):
-        # NOTE: flac support only
-        # TODO: add mp3 and m4a support
+        # NOTE: flac and mp3 support
+        # TODO: add m4a support
 
         # FLAC
         if hasattr(picture, "width") and hasattr(picture, "height"):
             return (picture.width, picture.height)
 
+        # MP3
+        else:
+            picinfo = Image.open(BytesIO(picture.data))
+            return (picinfo.width, picinfo.height)
+
     def createPicture(self, picdata, mime):
-        # NOTE: flac support only
-        # TODO: add mp3 and m4a support
+        # NOTE: flac and mp3 support
+        # TODO: add m4a support
 
         if "audio/flac" in mime:
             return self.createFlacPicture(picdata)
 
+        elif "audio/mp3" in mime:
+            return self.createMP3Picture(picdata)
+
     def createFlacPicture(self, data):
         pic = mutagen.flac.Picture()
+
+        pic.data = data
+
+        pic.type = mutagen.id3.PictureType.COVER_FRONT
+        pic.mime = "image/" + self.args.format
+        pic.width = self.args.size
+        pic.height = self.args.size
+        pic.depth = 16
+
+        return pic
+
+    def createMP3Picture(self, data):
+        pic = mutagen.id3.APIC()
 
         pic.data = data
 
@@ -407,7 +445,7 @@ class Main:
     def checkAudio(file):
         # NOTE: until all types are supported
         # exts = (".flac", ".mp3", ".wav", ".m4a")
-        exts = (".flac", "asdjkasdkjasdkj")
+        exts = (".flac", ".mp3")
         for ext in exts:
 
             if file.lower().endswith(ext):
