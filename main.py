@@ -212,20 +212,15 @@ class Main:
         if os.path.isfile(file_path):
 
             audio = mutagen.File(file_path)
-            if audio != None and hasattr(audio, "pictures"):
+            if audio != None and not self.audioHasPictures(audio):
 
                 # File has not pictures
-                if audio.pictures == [] and cover != None:
-
-                    pic = self.createPicture(cover)
-
-                    audio.clear_pictures()
-
-                    audio.add_picture(pic)
-                    audio.save(file_path)
-
+                pic = self.createPicture(cover, audio.mime)
+                result = self.addPicture(audio, file_path, pic, clear=True, save=True)
+                if result:
                     # Update statistics
                     self.statistics["new_count"] += 1
+                    return
 
                 # File has pictures
                 else:
@@ -234,13 +229,13 @@ class Main:
                     newPictures = []
                     resized_fuse = False
 
-                    for picture in audio.pictures:
+                    for picture in self.getPictures(audio):
 
-                        picdata = picture.data
+                        picdata = self.getPictureData(picture)
+                        picsize = self.getPictureSize(picture)
                         # Check picture size
                         if (
-                            picture.width != self.args.size
-                            or picture.height != self.args.size
+                            picsize[0] != self.args.size or picsize[1] != self.args.size
                         ) or self.args.force:
 
                             # Resize picture
@@ -250,22 +245,20 @@ class Main:
                             if resized:
                                 resized_fuse = True
 
-                        newPicture = self.createPicture(picdata)
-
+                        newPicture = self.createPicture(picdata, audio.mime)
                         newPictures.append(newPicture)
 
                     # Check if any pictures were resized
                     if resized_fuse:
-                        audio.clear_pictures()
+                        result = self.addPicture(
+                            audio, file_path, newPictures, clear=True, save=True
+                        )
 
-                        for picture in newPictures:
+                        if result:
+                            # Update statistics
+                            self.statistics["converted_count"] += 1
+                            return
 
-                            audio.add_picture(picture)
-
-                        audio.save(file_path)
-
-                        # Update statistics
-                        self.statistics["converted_count"] += 1
                     else:
 
                         # Update statistics
@@ -275,7 +268,7 @@ class Main:
                 album = audio["album"][0] if audio.get("album") else None
                 if (
                     not self.args.local
-                    and audio.pictures == []
+                    and self.getPictures(audio) == []
                     and self.checkedfuse != album
                     and artist
                     and album
@@ -305,27 +298,76 @@ class Main:
                         result_data, _ = self.getCover(BytesIO(result_data))
 
                         # Get picture from data
-                        picture = self.createPicture(result_data)
+                        picture = self.createPicture(result_data, audio.mime)
 
-                        # Add picture to file
-                        audio.add_picture(picture)
-
-                        # Save file
-                        audio.save(file_path)
+                        # Add picture and save file
+                        self.addPicture(audio, file_path, picture, save=True)
 
                         return result_data
 
                     # Update checked fuse
                     self.checkedfuse = album
 
-                if audio.pictures == []:
+                if self.getPictures(audio) == []:
 
                     # Check if path is not in not_found list
                     folder_path = os.path.dirname(file_path)
                     if folder_path not in self.statistics["not_found_list"]:
                         self.statistics["not_found_list"].append(folder_path)
 
-    def createPicture(self, data):
+    def addPicture(self, audio, file_path, cover, clear=False, save=False):
+        # NOTE: flac support only
+        # TODO: add mp3 and m4a support
+        if cover != None:
+
+            if type(cover) is not list:
+                cover = [cover]
+
+            if "audio/flac" in audio.mime:
+
+                if clear:
+                    audio.clear_pictures()
+
+                for pic in cover:
+                    audio.add_picture(pic)
+
+                if save:
+                    audio.save(file_path)
+
+                return audio
+
+    def getPictures(self, audio):
+        # NOTE: flac support only
+        # TODO: add mp3 and m4a support
+        if "audio/flac" in audio.mime:
+
+            return audio.pictures
+
+    def getPictureData(self, picture):
+        # NOTE: flac support only
+        # TODO: add mp3 and m4a support
+
+        # FLAC
+        if hasattr(picture, "data"):
+
+            return picture.data
+
+    def getPictureSize(self, picture):
+        # NOTE: flac support only
+        # TODO: add mp3 and m4a support
+
+        # FLAC
+        if hasattr(picture, "width") and hasattr(picture, "height"):
+            return (picture.width, picture.height)
+
+    def createPicture(self, picdata, mime):
+        # NOTE: flac support only
+        # TODO: add mp3 and m4a support
+
+        if "audio/flac" in mime:
+            return self.createFlacPicture(picdata)
+
+    def createFlacPicture(self, data):
         pic = mutagen.flac.Picture()
 
         pic.data = data
@@ -337,6 +379,11 @@ class Main:
         pic.depth = 16
 
         return pic
+
+    def audioHasPictures(self, audio):
+        # NOTE: only flac and mp3 types
+        # TODO: add support for m4a
+        return hasattr(audio, "pictures") or audio.get("APIC")
 
     @staticmethod
     def getShape(size):
@@ -358,7 +405,9 @@ class Main:
 
     @staticmethod
     def checkAudio(file):
-        exts = (".flac", ".mp3", ".wav", ".m4a")
+        # NOTE: until all types are supported
+        # exts = (".flac", ".mp3", ".wav", ".m4a")
+        exts = (".flac", "asdjkasdkjasdkj")
         for ext in exts:
 
             if file.lower().endswith(ext):
