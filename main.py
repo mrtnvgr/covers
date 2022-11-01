@@ -360,6 +360,8 @@ class Main:
 
             return audio.tags.getall("APIC")
 
+        return []
+
     def getPictureData(self, picture):
         # NOTE: flac and mp3 support
         # TODO: add m4a support
