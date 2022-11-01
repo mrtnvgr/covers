@@ -212,7 +212,7 @@ class Main:
         if os.path.isfile(file_path):
 
             audio = mutagen.File(file_path)
-            if audio != None and not self.audioHasPictures(audio):
+            if audio != None and not self.getPictures(audio):
 
                 # File has not pictures
                 pic = self.createPicture(cover, audio.mime)
@@ -417,11 +417,6 @@ class Main:
         pic.depth = 16
 
         return pic
-
-    def audioHasPictures(self, audio):
-        # NOTE: only flac and mp3 types
-        # TODO: add support for m4a
-        return hasattr(audio, "pictures") or audio.get("APIC")
 
     @staticmethod
     def getShape(size):
