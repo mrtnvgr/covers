@@ -212,7 +212,10 @@ class Main:
         if os.path.isfile(file_path):
 
             audio = mutagen.File(file_path)
-            if audio != None and not self.getPictures(audio):
+            if audio == None:
+                return
+
+            if not self.getPictures(audio):
 
                 # File has not pictures
                 pic = self.createPicture(cover, audio.mime)
@@ -222,47 +225,47 @@ class Main:
                     self.statistics["new_count"] += 1
                     return
 
-                # File has pictures
+            # File has pictures
+            else:
+
+                # Check picture size
+                newPictures = []
+                resized_fuse = False
+
+                for picture in self.getPictures(audio):
+
+                    picdata = self.getPictureData(picture)
+                    picsize = self.getPictureSize(picture)
+                    # Check picture size
+                    if (
+                        picsize[0] != self.args.size or picsize[1] != self.args.size
+                    ) or self.args.force:
+
+                        # Resize picture
+                        picdata, resized = self.getCover(BytesIO(picdata))
+
+                        # Burn resized fuse
+                        if resized:
+                            resized_fuse = True
+
+                    newPicture = self.createPicture(picdata, audio.mime)
+                    newPictures.append(newPicture)
+
+                # Check if any pictures were resized
+                if resized_fuse:
+                    result = self.addPicture(
+                        audio, file_path, newPictures, clear=True, save=True
+                    )
+
+                    if result:
+                        # Update statistics
+                        self.statistics["converted_count"] += 1
+                        return
+
                 else:
 
-                    # Check picture size
-                    newPictures = []
-                    resized_fuse = False
-
-                    for picture in self.getPictures(audio):
-
-                        picdata = self.getPictureData(picture)
-                        picsize = self.getPictureSize(picture)
-                        # Check picture size
-                        if (
-                            picsize[0] != self.args.size or picsize[1] != self.args.size
-                        ) or self.args.force:
-
-                            # Resize picture
-                            picdata, resized = self.getCover(BytesIO(picdata))
-
-                            # Burn resized fuse
-                            if resized:
-                                resized_fuse = True
-
-                        newPicture = self.createPicture(picdata, audio.mime)
-                        newPictures.append(newPicture)
-
-                    # Check if any pictures were resized
-                    if resized_fuse:
-                        result = self.addPicture(
-                            audio, file_path, newPictures, clear=True, save=True
-                        )
-
-                        if result:
-                            # Update statistics
-                            self.statistics["converted_count"] += 1
-                            return
-
-                    else:
-
-                        # Update statistics
-                        self.statistics["skipped_count"] += 1
+                    # Update statistics
+                    self.statistics["skipped_count"] += 1
 
                 artist = (audio.get("artist") or audio.get("performer")) or None
                 album = audio["album"][0] if audio.get("album") else None
@@ -315,92 +318,91 @@ class Main:
                     if folder_path not in self.statistics["not_found_list"]:
                         self.statistics["not_found_list"].append(folder_path)
 
-    def addPicture(self, audio, file_path, cover, clear=False, save=False):
-        # NOTE: flac and mp3 support
-        # TODO: add m4a support
-        if cover != None:
+    def addPicture(self, audio, file_path, covers, clear=False, save=False):
+        if covers != None:
 
-            if type(cover) is not list:
-                cover = [cover]
+            if type(covers) is not list:
+                covers = [covers]
 
             if "audio/flac" in audio.mime:
 
                 if clear:
                     audio.clear_pictures()
 
-                for pic in cover:
+                for pic in covers:
                     audio.add_picture(pic)
-
-                if save:
-                    audio.save(file_path)
-
-                return audio
 
             elif "audio/mp3" in audio.mime:
 
                 if clear:
                     audio.tags.delall("APIC")
 
-                for pic in cover:
+                for pic in covers:
                     audio.tags.add(pic)
 
-                if save:
-                    audio.save(file_path)
+            elif "audio/mp4" in audio.mime:
 
-                return audio
+                if clear:
+                    if "covr" in audio.tags:
+                        audio.tags.pop("covr")
+
+                audio["covr"] = covers
+
+            if save:
+                audio.save(file_path)
+
+            return audio
 
     def getPictures(self, audio):
-        # NOTE: flac and mp3 support
-        # TODO: add m4a support
         if "audio/flac" in audio.mime:
-
             return audio.pictures
 
         elif "audio/mp3" in audio.mime:
-
             return audio.tags.getall("APIC")
 
-        return []
+        elif "audio/mp4" in audio.mime:
+            return audio.tags.get("covr")
+
+        else:
+            return []
 
     def getPictureData(self, picture):
-        # NOTE: flac and mp3 support
-        # TODO: add m4a support
-
         # FLAC and MP3
-        if hasattr(picture, "data"):
+        if type(picture) is mutagen.flac.Picture or type(picture) is mutagen.id3.APIC:
+            if hasattr(picture, "data"):
 
-            return picture.data
+                return picture.data
+        # M4A
+        elif type(picture) is mutagen.mp4.MP4Cover:
+            return bytes(picture)
 
     def getPictureSize(self, picture):
-        # NOTE: flac and mp3 support
-        # TODO: add m4a support
-
         # FLAC
         if hasattr(picture, "width") and hasattr(picture, "height"):
             return (picture.width, picture.height)
 
-        # MP3
+        # MP3 and M4A
         else:
-            picinfo = Image.open(BytesIO(picture.data))
+            picinfo = Image.open(BytesIO(self.getPictureData(picture)))
             return (picinfo.width, picinfo.height)
 
     def createPicture(self, picdata, mime):
-        # NOTE: flac and mp3 support
-        # TODO: add m4a support
-
         if "audio/flac" in mime:
-            return self.createFlacPicture(picdata)
+            return self.createFLACPicture(picdata)
 
         elif "audio/mp3" in mime:
             return self.createMP3Picture(picdata)
 
-    def createFlacPicture(self, data):
+        elif "audio/mp4" in mime:
+            return self.createMP4Picture(picdata)
+
+    def createFLACPicture(self, data):
         pic = mutagen.flac.Picture()
 
         pic.data = data
 
         pic.type = mutagen.id3.PictureType.COVER_FRONT
-        pic.mime = "image/" + self.args.format
+        pic.mime = f"image/{self.args.format}"
         pic.width = self.args.size
         pic.height = self.args.size
         pic.depth = 16
@@ -413,12 +415,23 @@ class Main:
         pic.data = data
 
         pic.type = mutagen.id3.PictureType.COVER_FRONT
-        pic.mime = "image/" + self.args.format
+        pic.mime = f"image/{self.args.format}"
         pic.width = self.args.size
         pic.height = self.args.size
         pic.depth = 16
 
         return pic
+
+    def createMP4Picture(self, data):
+
+        if self.args.format == "jpeg":
+            pictype = mutagen.mp4.MP4Cover.FORMAT_JPEG
+        elif self.args.format == "png":
+            pictype = mutagen.mp4.MP4Cover.FORMAT_PNG
+        else:
+            raise Exception(f"Unexpected image format: {self.args.format}")
+
+        return mutagen.mp4.MP4Cover(data, pictype)
 
     @staticmethod
     def getShape(size):
@@ -441,12 +454,10 @@ class Main:
     @staticmethod
     def checkAudio(file):
         # NOTE: until all types are supported
-        # exts = (".flac", ".mp3", ".wav", ".m4a")
-        exts = (".flac", ".mp3")
-        for ext in exts:
-
-            if file.lower().endswith(ext):
-                return True
+        # exts = ("flac", "mp3", "wav", "m4a")
+        exts = ("flac", "mp3", "m4a")
+        if file.lower().split(".")[-1] in exts:
+            return True
         return False
 
     def print(self, text, func=print):
