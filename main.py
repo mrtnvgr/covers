@@ -217,13 +217,15 @@ class Main:
 
             if not self.getPictures(audio):
 
-                # File has not pictures
-                pic = self.createPicture(cover, audio.mime)
-                result = self.addPicture(audio, file_path, pic, clear=True, save=True)
-                if result:
-                    # Update statistics
-                    self.statistics["new_count"] += 1
-                    return
+                if cover != None:
+
+                    # File has not pictures
+                    pic = self.createPicture(cover, audio.mime)
+                    result = self.addPicture(audio, file_path, pic, clear=True, save=True)
+                    if result:
+                        # Update statistics
+                        self.statistics["new_count"] += 1
+                        return
 
             # File has pictures
             else:
@@ -358,13 +360,13 @@ class Main:
             return audio.pictures
 
         elif "audio/mp3" in audio.mime:
-            return audio.tags.getall("APIC")
+            if audio.tags != None:
+                return audio.tags.getall("APIC")
 
         elif "audio/mp4" in audio.mime:
             return audio.tags.get("covr")
 
-        else:
-            return []
+        return []
 
     def getPictureData(self, picture):
         # FLAC and MP3
