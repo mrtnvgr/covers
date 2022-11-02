@@ -221,7 +221,9 @@ class Main:
 
                     # File has not pictures
                     pic = self.createPicture(cover, audio.mime)
-                    result = self.addPicture(audio, file_path, pic, clear=True, save=True)
+                    result = self.addPicture(
+                        audio, file_path, pic, clear=True, save=True
+                    )
                     if result:
                         # Update statistics
                         self.statistics["new_count"] += 1
@@ -239,9 +241,7 @@ class Main:
                     picdata = self.getPictureData(picture)
                     picsize = self.getPictureSize(picture)
                     # Check picture size
-                    if (
-                        picsize[0] != self.args.size or picsize[1] != self.args.size
-                    ) or self.args.force:
+                    if not self.isPictureEqual(picsize) or self.args.force:
 
                         # Resize picture
                         picdata, resized = self.getCover(BytesIO(picdata))
@@ -435,10 +435,20 @@ class Main:
 
         return mutagen.mp4.MP4Cover(data, pictype)
 
+    def isPictureEqual(self, picsize):
+        """Check if picture is equal to self.args.size with allowable errors"""
+        allowable_error = max(picsize) - min(picsize)
+
+        answer = (
+            abs(self.args.size - picsize[0]) <= allowable_error
+            or abs(self.args.size - picsize[1]) <= allowable_error
+        )
+        return answer
+
     @staticmethod
     def getShape(size):
         allowable_size_error = size[0] // 20
-        size_error = abs(size[0] - size[1])
+        size_error = max(size) - min(size)
         if size_error <= allowable_size_error:
             return "square"
         else:
